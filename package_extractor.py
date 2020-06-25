@@ -2,13 +2,13 @@ from dataclasses import dataclass, fields, field
 import numpy as np
 from typing import List
 import pkg_db
-# TODO Deal with this later too
 import general_functions as gf
 import os
 from ctypes import cdll, c_char_p, create_string_buffer
 from Crypto.Cipher import AES
 import binascii
-
+import text_decoding
+from version import version_str
 
 """
 Main program with every other file concatenated into a single file
@@ -57,11 +57,23 @@ def get_file_typename(file_type, file_subtype):
         return 'Unknown'
 
 
+def calculate_pkg_id(entry_a_data):
+    ref_pkg_id = (entry_a_data >> 13) & 0x3FF
+    ref_unk_id = entry_a_data >> 23
+
+    ref_digits = ref_unk_id & 0x3
+    if ref_digits == 1:
+        return ref_pkg_id
+    else:
+        return ref_pkg_id | 0x100 << ref_digits
+
+
 # All of these decoding functions use the information from formats.c on how to decode each entry
 def decode_entry_a(entry_a_data):
     ref_id = entry_a_data & 0x1FFF
-    ref_pkg_id = (entry_a_data >> 13) & 0x1FF
-    ref_unk_id = (entry_a_data >> 22) & 0x3FFF
+    # ref_pkg_id = (entry_a_data >> 13) & 0x3FF
+    ref_pkg_id = calculate_pkg_id(entry_a_data)
+    ref_unk_id = (entry_a_data >> 23) & 0x1FF
 
     return np.uint16(ref_id), np.uint16(ref_pkg_id), np.uint16(ref_unk_id)
 
@@ -114,9 +126,8 @@ class OodleDecompressor:
         force_size = int('0x40000', 16)
         output = create_string_buffer(force_size)
         self.handle.OodleLZ_Decompress(
-            c_char_p(payload), force_size, output, force_size,
+            c_char_p(payload), len(payload), output, force_size,
             0, 0, 0, None, None, None, None, None, None, 3)
-
         return output.raw
 
 
@@ -218,6 +229,26 @@ class SPkgEntry:
     EntryC: np.uint32 = np.uint32(0)
     EntryD: np.uint32 = np.uint32(0)
 
+    '''
+     [             EntryD              ] [             EntryC              ] 
+     GGGGGGFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFEEEE EEEEEEEE EEDDDDDD DDDDDDDD
+
+     [             EntryB              ] [             EntryA              ]
+     00000000 00000000 TTTTTTTS SS000000 CCCCCCCC CBBBBBBB BBBAAAAA AAAAAAAA
+
+     A:RefID: EntryA & 0x1FFF
+     B:RefPackageID: (EntryA >> 13) & 0x3FF
+     C:RefUnkID: (EntryA >> 23) & 0x1FF
+     D:StartingBlock: EntryC & 0x3FFF
+     E:StartingBlockOffset: ((EntryC >> 14) & 0x3FFF) << 4
+     F:FileSize: (EntryD & 0x3FFFFFF) << 4 | (EntryC >> 28) & 0xF
+     G:Unknown: (EntryD >> 26) & 0x3F
+
+     Flags (Entry B)
+     S:SubType: (EntryB >> 6) & 0x7
+     T:Type:  (EntryB >> 9) & 0x7F
+    '''
+
 
 @dataclass
 class SPkgEntryDecoded:
@@ -272,7 +303,10 @@ class Package:
 
     def __init__(self, package_directory):
         self.package_directory = package_directory
-        self.package_id = self.package_directory[-10:-6]
+        if '_en_' in self.package_directory:
+            self.package_id = self.package_directory[-13:-9]
+        else:
+            self.package_id = self.package_directory[-10:-6]
         self.package_header = None
         self.entry_table = None
         self.block_table = None
@@ -282,26 +316,34 @@ class Package:
 
     def extract_package(self):
         self.get_all_patch_ids()
-
+        self.set_largest_patch_directory()
         print(f"Extracting files for {self.package_directory}")
 
         pkg_db.start_db_connection()
-        pkg_db.drop_table(self.package_id)
+        pkg_db.drop_table(self.package_directory.split("/w64")[-1][1:-6])
 
         self.max_pkg_hex = gf.get_hex_data(self.package_directory)
         self.package_header = self.get_header()
         self.entry_table = self.get_entry_table()
         self.block_table = self.get_block_table()
 
-        pkg_db.add_decoded_entries(self.entry_table.Entries, self.package_id)
-        pkg_db.add_block_entries(self.block_table.Entries, self.package_id)
-
+        pkg_db.add_decoded_entries(self.entry_table.Entries, self.package_directory.split("/w64")[-1][1:-6])
+        pkg_db.add_block_entries(self.block_table.Entries, self.package_directory.split("/w64")[-1][1:-6])
+        return  # uncomment this line if you just want to update all the DB files
         self.process_blocks()
 
     def get_all_patch_ids(self):
-        patch_ids = [x for x in os.listdir(self.package_directory.split('/')[0]) if self.package_id in x]
-        patch_ids.sort()
-        self.all_patch_ids = [int(x[-5]) for x in patch_ids]
+        print(self.package_directory.split('/w64')[0])
+        all_pkgs = [x for x in os.listdir(self.package_directory.split('/w64')[0]) if self.package_id in x]
+        all_pkgs.sort()
+        self.all_patch_ids = [int(x[-5]) for x in all_pkgs]
+
+    def set_largest_patch_directory(self):
+        if '_bootflow_' in self.package_directory or '_startup_' in self.package_directory:
+            return
+        all_pkgs = [x for x in os.listdir(self.package_directory.split('/w64')[0]) if self.package_id in x]
+        sorted_all_pkgs, _ = zip(*sorted(zip(all_pkgs, [int(x[-5]) for x in all_pkgs])))
+        self.package_directory = self.package_directory.split('/w64')[0] + '/' + sorted_all_pkgs[-1]
 
     def get_header(self):
         """
@@ -427,14 +469,15 @@ class Package:
 
     def process_blocks(self):
         all_pkg_hex = []
-        for i in range(int(self.all_patch_ids[0]), int(self.all_patch_ids[-1]) + 1):
+        # We shouldn't do this
+        for i in self.all_patch_ids:
+            print(i)
             hex_data = gf.get_hex_data(f'{self.package_directory[:-6]}_{i}.pkg')
             all_pkg_hex.append(hex_data)
 
-        blocks_bin = []
         self.set_nonce()
 
-        self.output_files(blocks_bin, all_pkg_hex)
+        self.output_files(all_pkg_hex)
 
     def decrypt_block(self, block, block_hex):
         aes_key_0 = binascii.unhexlify(''.join([x[2:] for x in self.AES_KEY_0]))
@@ -446,6 +489,7 @@ class Package:
             key = aes_key_0
         cipher = AES.new(key, AES.MODE_GCM, nonce=self.nonce)
         plaintext = cipher.decrypt(block_hex)
+        # print('Decrypted')
         return plaintext
 
     def set_nonce(self):
@@ -456,7 +500,10 @@ class Package:
         ]
 
         nonce = nonce_seed
-        package_id = int(f'0x{self.package_id}', 16)
+        try:
+            package_id = int(f'0x{self.package_id}', 16)
+        except ValueError:
+            package_id = int(f'0x0000', 16)
 
         nonce[11] ^= package_id & 0xFF
         nonce[1] ^= 0x26
@@ -470,17 +517,13 @@ class Package:
         # print("Decompressed block")
         return decompressed
 
-    def output_files(self, blocks_bin, all_pkg_hex):
+    def output_files(self, all_pkg_hex):
         try:
-            os.mkdir('output/')
-            os.mkdir('output/' + self.package_id)
+            os.mkdir(f'{version_str}/output_all/' + self.package_directory.split('/w64')[-1][1:-6])
         except FileExistsError:
-            try:
-                os.mkdir('output/' + self.package_id)
-            except FileExistsError:
-                pass
+            pass
 
-        for entry in self.entry_table.Entries:
+        for entry in self.entry_table.Entries[::-1]:
             current_block_id = entry.StartingBlock
             block_offset = entry.StartingBlockOffset
             block_count = int(np.floor((block_offset + entry.FileSize - 1) / self.BLOCK_SIZE))
@@ -490,11 +533,12 @@ class Package:
                 current_block = self.block_table.Entries[current_block_id]
                 if current_block.PatchID not in self.all_patch_ids:
                     print(f"Missing PatchID {current_block.PatchID}")
-                    quit()
-                current_pkg_data = all_pkg_hex[current_block.PatchID - self.all_patch_ids[0]]
+                    return
+                current_pkg_data = all_pkg_hex[self.all_patch_ids.index(current_block.PatchID)]
                 current_block_bin = binascii.unhexlify(current_pkg_data[current_block.Offset * 2:current_block.Offset * 2 + current_block.Size * 2])
                 # We only decrypt/decompress if need to
                 if current_block.Flags & 0x2:
+                    # print('Going to decrypt')
                     current_block_bin = self.decrypt_block(current_block, current_block_bin)
                 if current_block.Flags & 0x1:
                     # print(f'Decompressing block {current_block.ID}')
@@ -504,16 +548,58 @@ class Package:
                 else:
                     file_buffer += current_block_bin
                 current_block_id += 1
-            with open(f'output/{self.package_id}/{entry.FileName.upper()}.bin', 'wb') as f:
+            if entry.ID > 6000:
+                print('')
+            with open(f'{version_str}/output_all/{self.package_directory.split("/w64")[-1][1:-6]}/{entry.FileName.upper()}.bin', 'wb') as f:
                 f.write(file_buffer[:entry.FileSize])
             print(f"Wrote to {entry.FileName} successfully")
 
 
-pkg1 = Package("packages/w64_ui_01e3_6.pkg")
-pkg1.extract_package()
-# pkg4 = Package("packages/w64_activities_01c1_6.pkg")
-# pkg4.extract_package()
-pkg2 = Package("packages/w64_activities_0199_6.pkg")
-pkg2.extract_package()
-pkg3 = Package("packages/w64_investment_globals_client_0912_3.pkg")
-pkg3.extract_package()
+# dir = 'F:/Steam/steamapps/common/Destiny 2/packages/'
+
+# pkg = Package(f'{dir}w64_eden_activities_01eb_6.pkg')
+# pkg.extract_package()  # no 4?
+# text_decoding.automatic_folder_converter(f'output/{pkg.package_id}/')
+
+
+def unpack_all(path):
+    all_packages = os.listdir(path)
+    unpacked_packages = os.listdir(f'{version_str}/output_all/')
+    seen_pkgs = []
+    unpack_pkgs = []
+    for pkg in all_packages:
+        pkg_trimmed = pkg[:-5]
+        print(pkg[4:-6])
+        if pkg_trimmed not in seen_pkgs and pkg[4:-6] not in unpacked_packages:
+            seen_pkgs.append(pkg_trimmed)
+            unpack_pkgs.append(pkg)
+    print(unpack_pkgs)
+    for pkg in all_packages:
+        pkg = Package(f'{path}/{pkg}')
+        print(pkg.package_directory)
+        pkg.extract_package()
+
+
+def check_all_files_exist():
+    pkg_db.start_db_connection()
+    all_packages = os.listdir(f'{version_str}/output_all/')
+    for pkg in all_packages:
+        entries = pkg_db.get_entries_from_table(pkg, 'ID')
+        if len(entries) != len(os.listdir(f'{version_str}/output_all/' + pkg)):
+            print(f'{package_id} not same {len(entries)} vs {len(os.listdir(f"{version_str}/output_all/" + pkg))}')
+            continue
+            pkg = Package(f'M:/D2_Datamining/d2packages/{version_str}/w64_{pkg}_0.pkg')
+            pkg.extract_package()
+
+
+print(f"Working on version {version_str}")
+try:
+    os.mkdir(f'{version_str}/')
+    os.mkdir(f'{version_str}/output_all/')
+except FileExistsError:
+    try:
+        os.mkdir(f'{version_str}/output_all/')
+    except FileExistsError:
+        pass
+unpack_all(f'M:/D2_Datamining/d2packages/{version_str}')
+# check_all_files_exist()
