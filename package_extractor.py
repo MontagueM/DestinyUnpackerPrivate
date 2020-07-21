@@ -18,6 +18,8 @@ Main program with every other file concatenated into a single file
 def get_file_typename(file_type, file_subtype):
     if file_type == 8:
         return '8080xxxx Structure File'
+    elif file_type == 24 and file_subtype == 0:
+        return 'Mapping Data'
     elif file_type == 25:
         return 'OTF Font'
     elif file_type == 26:
@@ -81,7 +83,7 @@ def decode_entry_a(entry_a_data):
 def decode_entry_b(entry_b_data):
     file_subtype = (entry_b_data >> 6) & 0x7
     file_type = (entry_b_data >> 9) & 0x7F
-
+    # print(file_type)
     return np.uint8(file_type), np.uint8(file_subtype)
 
 
@@ -564,17 +566,21 @@ class Package:
 
 def unpack_all(path):
     all_packages = os.listdir(path)
+    update_db_packages = []
     unpacked_packages = os.listdir(f'{version_str}/output_all/')
     seen_pkgs = []
     unpack_pkgs = []
     for pkg in all_packages:
         pkg_trimmed = pkg[:-5]
         print(pkg[4:-6])
-        if pkg_trimmed not in seen_pkgs and pkg[4:-6] not in unpacked_packages:
+        if pkg_trimmed not in seen_pkgs:
             seen_pkgs.append(pkg_trimmed)
-            unpack_pkgs.append(pkg)
+            update_db_packages.append(pkg)
+            if pkg[4:-6] not in unpacked_packages:
+                unpack_pkgs.append(pkg)
     print(unpack_pkgs)
-    for pkg in all_packages:
+    for pkg in update_db_packages:  # Change to all_packages with the return in class to change all the DB only, else use unpack_pkgs
+        # if '039e' in pkg:
         pkg = Package(f'{path}/{pkg}')
         print(pkg.package_directory)
         pkg.extract_package()
@@ -588,7 +594,8 @@ def check_all_files_exist():
         if len(entries) != len(os.listdir(f'{version_str}/output_all/' + pkg)):
             print(f'{package_id} not same {len(entries)} vs {len(os.listdir(f"{version_str}/output_all/" + pkg))}')
             continue
-            pkg = Package(f'M:/D2_Datamining/d2packages/{version_str}/w64_{pkg}_0.pkg')
+            # pkg = Package(f'M:/D2_Datamining/d2packages/{version_str}/w64_{pkg}_0.pkg')
+            pkg = Package(f'G:/d2packages/{version_str}/w64_{pkg}_0.pkg')
             pkg.extract_package()
 
 
@@ -602,4 +609,5 @@ except FileExistsError:
     except FileExistsError:
         pass
 unpack_all(f'M:/D2_Datamining/d2packages/{version_str}')
+# unpack_all(f'G:/d2packages/{version_str}')  # for versions after 2_9_0_2
 # check_all_files_exist()

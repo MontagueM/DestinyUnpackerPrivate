@@ -24,7 +24,6 @@ def drop_table(pkg_str_to_drop):
 def add_decoded_entries(decoded_entries, pkg_str):
     global con
     global c
-    print(decoded_entries)
     entries = [(int(decoded_entry.ID), decoded_entry.FileName.upper(),
                "0x" + gf.fill_hex_with_zeros(hex(decoded_entry.RefID)[2:], 4).upper(),
                "0x" + gf.fill_hex_with_zeros(hex(decoded_entry.RefPackageID)[2:], 4).upper(),
