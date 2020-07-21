@@ -24,12 +24,13 @@ def drop_table(pkg_str_to_drop):
 def add_decoded_entries(decoded_entries, pkg_str):
     global con
     global c
+    print(decoded_entries)
     entries = [(int(decoded_entry.ID), decoded_entry.FileName.upper(),
                "0x" + gf.fill_hex_with_zeros(hex(decoded_entry.RefID)[2:], 4).upper(),
                "0x" + gf.fill_hex_with_zeros(hex(decoded_entry.RefPackageID)[2:], 4).upper(),
                int(decoded_entry.FileSize), int(decoded_entry.FileSize/1024),
                int(decoded_entry.Type), int(decoded_entry.SubType), decoded_entry.FileType) for decoded_entry in decoded_entries]
-    c.execute('CREATE TABLE IF NOT EXISTS ' + pkg_str + '_DecodedData (ID INTEGER, FileName STRING, RefID STRING, RefPKG STRING, FileSizeB INTEGER, FileSizeKB INTEGER, Type INTEGER, SubType INTEGER, FileType STRING)')
+    c.execute('CREATE TABLE IF NOT EXISTS ' + pkg_str + '_DecodedData (ID INTEGER, FileName TEXT, RefID STRING, RefPKG STRING, FileSizeB INTEGER, FileSizeKB INTEGER, Type INTEGER, SubType INTEGER, FileType STRING)')
     c.executemany('INSERT INTO ' + pkg_str + '_DecodedData (ID, FileName, RefID, RefPKG, FileSizeB, FileSizeKB, Type, SubType, FileType) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);',
               entries)
 
@@ -41,7 +42,7 @@ def add_decoded_entries(decoded_entries, pkg_str):
                 "0x" + gf.fill_hex_with_zeros(hex(decoded_entry.RefUnkID)[2:], 4).upper(),
                 int(decoded_entry.StartingBlock),
                 "0x" + gf.fill_hex_with_zeros(hex(decoded_entry.StartingBlockOffset)[2:], 8).upper()) for decoded_entry in decoded_entries]
-    c.execute('CREATE TABLE IF NOT EXISTS ' + pkg_str + '_DecodedData_FullData (ID INTEGER, FileName STRING, RefID STRING, RefPKG STRING, FileSizeB INTEGER, FileSizeKB INTEGER, Type INTEGER, SubType INTEGER, FileType STRING, RefUnkID STRING, StartingBlock INTEGER, StartingBlockOffset STRING)')
+    c.execute('CREATE TABLE IF NOT EXISTS ' + pkg_str + '_DecodedData_FullData (ID INTEGER, FileName TEXT, RefID STRING, RefPKG STRING, FileSizeB INTEGER, FileSizeKB INTEGER, Type INTEGER, SubType INTEGER, FileType STRING, RefUnkID STRING, StartingBlock INTEGER, StartingBlockOffset STRING)')
     c.executemany('INSERT INTO ' + pkg_str + '_DecodedData_FullData (ID, FileName, RefID, RefPKG, FileSizeB, FileSizeKB, Type, SubType, FileType, RefUnkID, StartingBlock, StartingBlockOffset) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);',
               entries_fulldata)
     con.commit()
