@@ -15,11 +15,21 @@ Main program with every other file concatenated into a single file
 """
 
 
-def get_file_typename(file_type, file_subtype):
+def get_file_typename(file_type, file_subtype, ref_id, ref_pkg):
     if file_type == 8:
+        if ref_id == 5741 and ref_pkg == 4:
+            return 'Mapping Data'
+        elif ref_id == 6794 and ref_pkg == 4:
+            return 'Text Data'
+        elif ref_id == 6792 and ref_pkg == 4:
+            return 'Text Header'
+        elif ref_id == 4519 and ref_pkg == 3:
+            return 'Model Header 1'
+        elif ref_id == 4500 and ref_pkg == 3:
+            return 'Model Header 2'
         return '8080xxxx Structure File'
     elif file_type == 24 and file_subtype == 0:
-        return 'Mapping Data'
+        return 'Old Mapping Data'
     elif file_type == 25:
         return 'OTF Font'
     elif file_type == 26:
@@ -316,9 +326,10 @@ class Package:
         self.max_pkg_hex = None
         self.nonce = None
 
-    def extract_package(self):
+    def extract_package(self, extract=True, largest_patch=True):
         self.get_all_patch_ids()
-        self.set_largest_patch_directory()
+        if largest_patch:
+            self.set_largest_patch_directory()
         print(f"Extracting files for {self.package_directory}")
 
         pkg_db.start_db_connection()
@@ -331,8 +342,8 @@ class Package:
 
         pkg_db.add_decoded_entries(self.entry_table.Entries, self.package_directory.split("/w64")[-1][1:-6])
         pkg_db.add_block_entries(self.block_table.Entries, self.package_directory.split("/w64")[-1][1:-6])
-        return  # uncomment this line if you just want to update all the DB files
-        self.process_blocks()
+        if extract:
+            self.process_blocks()
 
     def get_all_patch_ids(self):
         print(self.package_directory.split('/w64')[0])
@@ -427,7 +438,7 @@ class Package:
             starting_block, starting_block_offset = decode_entry_c(entry.EntryC)
             file_size, unknown = decode_entry_d(entry.EntryC, entry.EntryD)
             file_name = f"{self.package_id}-{gf.fill_hex_with_zeros(hex(count)[2:], 8)}"
-            file_typename = get_file_typename(file_type, file_subtype)
+            file_typename = get_file_typename(file_type, file_subtype, ref_id, ref_pkg_id)
 
             decoded_entry = SPkgEntryDecoded(np.uint16(count), file_name, file_typename,
                                              ref_id, ref_pkg_id, ref_unk_id, file_type, file_subtype, starting_block,
@@ -514,14 +525,15 @@ class Package:
         self.nonce = binascii.unhexlify(''.join([gf.fill_hex_with_zeros(hex(x)[2:], 2) for x in nonce]))
 
     def decompress_block(self, block_bin):
-        decompressor = OodleDecompressor('oo2core_3_win64.dll')
+        decompressor = OodleDecompressor('D:\D2_Datamining\Package Unpacker\oo2core_3_win64.dll')
         decompressed = decompressor.decompress(block_bin)
         # print("Decompressed block")
         return decompressed
 
     def output_files(self, all_pkg_hex):
         try:
-            os.mkdir(f'{version_str}/output_all/' + self.package_directory.split('/w64')[-1][1:-6])
+            # os.mkdir(f'{version_str}/output_all/' + self.package_directory.split('/w64')[-1][1:-6])
+            os.mkdir('C:/d2_pkg_temp/' + self.package_directory.split('/w64')[-1][1:-6])
         except FileExistsError:
             pass
 
@@ -552,7 +564,8 @@ class Package:
                 current_block_id += 1
             if entry.ID > 6000:
                 print('')
-            with open(f'{version_str}/output_all/{self.package_directory.split("/w64")[-1][1:-6]}/{entry.FileName.upper()}.bin', 'wb') as f:
+            with open(f'C:/d2_pkg_temp/{self.package_directory.split("/w64")[-1][1:-6]}/{entry.FileName.upper()}.bin', 'wb') as f:
+            # with open(f'{version_str}/output_all/{self.package_directory.split("/w64")[-1][1:-6]}/{entry.FileName.upper()}.bin', 'wb') as f:
                 f.write(file_buffer[:entry.FileSize])
             print(f"Wrote to {entry.FileName} successfully")
 
@@ -564,10 +577,25 @@ class Package:
 # text_decoding.automatic_folder_converter(f'output/{pkg.package_id}/')
 
 
+banned_folders = [
+    'img',
+    'activities',
+    'environments',
+    'sandbox',
+    'globals',
+    'investment',
+    'shared',
+    'ui',
+    # 'audio',
+    'npc'
+]
+
+
 def unpack_all(path):
     all_packages = os.listdir(path)
     update_db_packages = []
-    unpacked_packages = os.listdir(f'{version_str}/output_all/')
+    # unpacked_packages = os.listdir(f'{version_str}/output_all/')
+    unpacked_packages = os.listdir(f'C:/d2_output_2_9_1_0/')
     seen_pkgs = []
     unpack_pkgs = []
     for pkg in all_packages:
@@ -579,8 +607,14 @@ def unpack_all(path):
             if pkg[4:-6] not in unpacked_packages:
                 unpack_pkgs.append(pkg)
     print(unpack_pkgs)
-    for pkg in update_db_packages:  # Change to all_packages with the return in class to change all the DB only, else use unpack_pkgs
-        # if '039e' in pkg:
+    for pkg in unpack_pkgs:  # Change to all_packages with the return in class to change all the DB only, else use unpack_pkgs
+        # if 'audio' not in pkg:
+        banned = False
+        for bf in banned_folders:
+            if bf in pkg:
+                banned = True
+        if banned or 'audio' not in pkg:
+            continue
         pkg = Package(f'{path}/{pkg}')
         print(pkg.package_directory)
         pkg.extract_package()
@@ -599,15 +633,18 @@ def check_all_files_exist():
             pkg.extract_package()
 
 
-print(f"Working on version {version_str}")
-try:
-    os.mkdir(f'{version_str}/')
-    os.mkdir(f'{version_str}/output_all/')
-except FileExistsError:
+if __name__ == '__main__':
+    print(f"Working on version {version_str}")
     try:
+        os.mkdir(f'{version_str}/')
         os.mkdir(f'{version_str}/output_all/')
     except FileExistsError:
-        pass
-unpack_all(f'M:/D2_Datamining/d2packages/{version_str}')
-# unpack_all(f'G:/d2packages/{version_str}')  # for versions after 2_9_0_2
-# check_all_files_exist()
+        try:
+            os.mkdir(f'{version_str}/output_all/')
+        except FileExistsError:
+            pass
+    # unpack_all(f'M:/D2_Datamining/d2packages/{version_str}')
+    # unpack_all(f'F:/Steam/steamapps/common/Destiny 2/packages')
+    # unpack_all(f'G:/d2packages/{version_str}')  # for versions after 2_9_0_2
+    unpack_all('G:/SteamLibrary/steamapps/common/Destiny 2/packages/')
+    # check_all_files_exist()

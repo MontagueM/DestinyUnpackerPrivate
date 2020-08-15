@@ -169,23 +169,39 @@ def automatic_folder_converter_all(pkg_dir, pkg_name):
 
 
 def find_difference_in_text():
-    old_version_str = '2_9_0_1'
-    all_packages_old = os.listdir(f'{old_version_str}/text_all/')
-    all_packages_new = os.listdir(f'{version_str}/text_all/')
-    for file in all_packages_new:
-        if file in all_packages_old:
-            lines1 = open(f'{old_version_str}/text_all/{file}', encoding='utf8').readlines()
-            lines2 = open(f'{version_str}/text_all/{file}', encoding='utf8').readlines()
-            for line in difflib.unified_diff(lines1, lines2, fromfile='file1', tofile='file2', lineterm=''):
-                print(line)
+    old_versions = ['2_9_0_1']
+    for old_version_str in old_versions[::-1]:
+        new_pkgs = os.listdir(f'{version_str}/output_all/')
+        old_pkgs = os.listdir(f'{old_version_str}/output_all/')
+        for pkg in new_pkgs:
+            if pkg in old_pkgs:
+                print(pkg)
+                lines1 = open(f'{old_version_str}/text_all/{pkg}_text.txt', encoding='utf8').readlines()
+                lines2 = open(f'{version_str}/text_all/{pkg}_text.txt', encoding='utf8').readlines()
+                for line in difflib.unified_diff(lines1, lines2, fromfile='file1', tofile='file2', lineterm=''):
+                    print(line)
 
 
 def get_text_in_pkgs():
     # Converts all pkgs in output_all for this version to text
     all_packages = os.listdir(f'{version_str}/output_all/')
     for pkg in all_packages:
-        if 'globals_' in pkg:
+        if 'advent_' in pkg:
             automatic_folder_converter_all(f'{version_str}/output_all/{pkg}/', pkg)
 
 
-find_difference_in_text()
+def count_text_in_pkgs():
+    all_packages = os.listdir(f'{version_str}/output_all/')
+    for pkg in all_packages:
+        count = 0
+        pkg_db.start_db_connection()
+        entries = {x: y for x, y in pkg_db.get_entries_from_table(pkg, 'ID, RefID')}
+        # print(entries)
+        for id, entry_name in enumerate(os.listdir(f'{version_str}/output_all/{pkg}')):
+            if entries[id] == '0x1A8A':
+                count += 1
+        print(f'{pkg}: {count} text files')
+
+# find_difference_in_text()
+# count_text_in_pkgs()
+get_text_in_pkgs()

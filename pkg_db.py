@@ -7,10 +7,11 @@ con = None
 c = None
 
 
-def start_db_connection():
+def start_db_connection(version=f'D:/D2_Datamining/Package Unpacker/db_test/{version_str}.db'):
     global con
     global c
-    con = sq.connect(f'{version_str}/{version_str}_pkg_data.db')
+    print(version)
+    con = sq.connect(version)
     c = con.cursor()
 
 
@@ -75,6 +76,12 @@ def get_blocks_from_table(pkg_str, column_select='*'):
     c.execute("SELECT " + column_select + " from " + pkg_str + "_BlockEntries")
     rows = c.fetchall()
     return rows
+
+
+def get_all_tables():
+    c.execute("select * from sqlite_master")
+    table_list = c.fetchall()
+    return table_list
 
 
 def mass_renaming_tables():
