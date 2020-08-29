@@ -1,1 +1,1 @@
-version_str = '2_9_1_2'
+version_str = '2_9_1_2_all'

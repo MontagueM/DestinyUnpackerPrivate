@@ -146,20 +146,21 @@ def file_to_text(file_path):
             c = cipher([entry_hex[i:i+2] for i in range(0, len(entry_hex), 2)], entry.Key)
             string += convert_to_unicode(''.join(c))
             string += '\n'
+            print(f'Entry {cipher_table.Entries.index(entry)}: {entry} string {[convert_to_unicode("".join(c))]}')
         return string
     return None
 
 
 def automatic_folder_converter_all(pkg_dir, pkg_name):
     pkg_db.start_db_connection()
-    with open(f'{version_str}/text_all/{pkg_name}_text.txt', 'w', encoding='utf-8') as f:
+    with open(f'C:/d2_output_2_9_1_0_text/{pkg_name}_text.txt', 'w', encoding='utf-8') as f:
         f.write('')
     entries = {x: y for x, y in pkg_db.get_entries_from_table(pkg_name, 'ID, RefID')}
     print(entries)
     for id, entry_name in enumerate(os.listdir(pkg_dir)):
         if entries[id] == '0x1A8A':
             print(f'Writing {os.listdir(pkg_dir)[id]} text strings')
-            with open(f'{version_str}/text_all/{pkg_name}_text.txt', 'a', encoding='utf-8') as f:
+            with open(f'C:/d2_output_2_9_1_0_text/{pkg_name}_text.txt', 'a', encoding='utf-8') as f:
                 f.write(os.listdir(pkg_dir)[id] + '\n')
                 to_write = file_to_text(pkg_dir + os.listdir(pkg_dir)[id])
                 if to_write is None:
@@ -168,26 +169,26 @@ def automatic_folder_converter_all(pkg_dir, pkg_name):
                 f.write('\n\n')
 
 
-def find_difference_in_text():
-    old_versions = ['2_9_0_1']
-    for old_version_str in old_versions[::-1]:
-        new_pkgs = os.listdir(f'{version_str}/output_all/')
-        old_pkgs = os.listdir(f'{old_version_str}/output_all/')
-        for pkg in new_pkgs:
-            if pkg in old_pkgs:
-                print(pkg)
-                lines1 = open(f'{old_version_str}/text_all/{pkg}_text.txt', encoding='utf8').readlines()
-                lines2 = open(f'{version_str}/text_all/{pkg}_text.txt', encoding='utf8').readlines()
-                for line in difflib.unified_diff(lines1, lines2, fromfile='file1', tofile='file2', lineterm=''):
-                    print(line)
+# def find_difference_in_text():
+#     old_versions = ['2_9_0_1']
+#     for old_version_str in old_versions[::-1]:
+#         new_pkgs = os.listdir(f'{version_str}/output_all/')
+#         old_pkgs = os.listdir(f'{old_version_str}/output_all/')
+#         for pkg in new_pkgs:
+#             if pkg in old_pkgs:
+#                 print(pkg)
+#                 lines1 = open(f'{old_version_str}/text_all/{pkg}_text.txt', encoding='utf8').readlines()
+#                 lines2 = open(f'{version_str}/text_all/{pkg}_text.txt', encoding='utf8').readlines()
+#                 for line in difflib.unified_diff(lines1, lines2, fromfile='file1', tofile='file2', lineterm=''):
+#                     print(line)
 
 
 def get_text_in_pkgs():
     # Converts all pkgs in output_all for this version to text
-    all_packages = os.listdir(f'{version_str}/output_all/')
+    all_packages = os.listdir(f'C:/d2_output_2_9_1_0/')
     for pkg in all_packages:
-        if 'advent_' in pkg:
-            automatic_folder_converter_all(f'{version_str}/output_all/{pkg}/', pkg)
+        if 'investment_' in pkg:
+            automatic_folder_converter_all(f'C:/d2_output_2_9_1_0/{pkg}/', pkg)
 
 
 def count_text_in_pkgs():
@@ -197,11 +198,13 @@ def count_text_in_pkgs():
         pkg_db.start_db_connection()
         entries = {x: y for x, y in pkg_db.get_entries_from_table(pkg, 'ID, RefID')}
         # print(entries)
-        for id, entry_name in enumerate(os.listdir(f'{version_str}/output_all/{pkg}')):
+        for id, entry_name in enumerate(os.listdir(f'C:/d2_output_2_9_1_0/{pkg}')):
             if entries[id] == '0x1A8A':
                 count += 1
         print(f'{pkg}: {count} text files')
 
+
 # find_difference_in_text()
 # count_text_in_pkgs()
-get_text_in_pkgs()
+# get_text_in_pkgs()
+file_to_text('C:/d2_output_2_9_1_0/investment_globals_client_0913/0913-00000CFF.bin')

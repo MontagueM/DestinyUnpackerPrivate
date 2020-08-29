@@ -533,7 +533,7 @@ class Package:
     def output_files(self, all_pkg_hex):
         try:
             # os.mkdir(f'{version_str}/output_all/' + self.package_directory.split('/w64')[-1][1:-6])
-            os.mkdir('C:/d2_pkg_temp/' + self.package_directory.split('/w64')[-1][1:-6])
+            os.mkdir('C:/d2_output_2_9_1_0/' + self.package_directory.split('/w64')[-1][1:-6])
         except FileExistsError:
             pass
 
@@ -564,7 +564,7 @@ class Package:
                 current_block_id += 1
             if entry.ID > 6000:
                 print('')
-            with open(f'C:/d2_pkg_temp/{self.package_directory.split("/w64")[-1][1:-6]}/{entry.FileName.upper()}.bin', 'wb') as f:
+            with open(f'C:/d2_output_2_9_1_0/{self.package_directory.split("/w64")[-1][1:-6]}/{entry.FileName.upper()}.bin', 'wb') as f:
             # with open(f'{version_str}/output_all/{self.package_directory.split("/w64")[-1][1:-6]}/{entry.FileName.upper()}.bin', 'wb') as f:
                 f.write(file_buffer[:entry.FileSize])
             print(f"Wrote to {entry.FileName} successfully")
@@ -609,12 +609,12 @@ def unpack_all(path):
     print(unpack_pkgs)
     for pkg in unpack_pkgs:  # Change to all_packages with the return in class to change all the DB only, else use unpack_pkgs
         # if 'audio' not in pkg:
-        banned = False
-        for bf in banned_folders:
-            if bf in pkg:
-                banned = True
-        if banned or 'audio' not in pkg:
-            continue
+        # banned = False
+        # for bf in banned_folders:
+        #     if bf in pkg:
+        #         banned = True
+        # if banned or 'audio' not in pkg:
+        #     continue
         pkg = Package(f'{path}/{pkg}')
         print(pkg.package_directory)
         pkg.extract_package()

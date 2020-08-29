@@ -23,6 +23,7 @@ versions = {
     '2_9_1_0': '0707',
     '2_9_1_1': '1407',
     '2_9_1_2': '0408',
+    '2_9_1_2_all': '0408',
 }
 
 pkg_dir = 'G:/SteamLibrary/steamapps/common/Destiny 2/packages'
@@ -71,7 +72,7 @@ def get_dict_of_dates():
 ########################################
 
 
-def find_differences(version_to_check):
+def find_differences(version_to_check, against=None):
     all_versions = [x.split('.')[0] for x in os.listdir('D:/D2_Datamining/Package Unpacker/db')]
     all_versions.remove(version_to_check)
     pkg_db.start_db_connection(f'db/{version_to_check}.db')
@@ -84,6 +85,9 @@ def find_differences(version_to_check):
         check_file_types[pkg] = {x: y for x, y in pkg_db.get_entries_from_table(pkg, 'FileName, FileType')}
         check_files[pkg] = [x[0] for x in pkg_db.get_entries_from_table(pkg, 'FileName')]
     for v in all_versions:
+        if against:
+            if v != against:
+                continue
         pkg_db.start_db_connection(f'db/{v}.db')
         for pkg in list(pkgs_to_check):
             wrote = False
@@ -139,7 +143,8 @@ def find_pkg_name(pkg):
 
 
 if __name__ == '__main__':
-    # get_version_db(version.version_str)
-    diff = find_differences(version_to_check='2_9_1_0')
-    pkg_select = 'black_garden_069b'
-    export_specific_files(pkg_select, diff[pkg_select])
+    # get_version_db('2_8_1_0')
+    diff = find_differences(version_to_check='2_9_1_2_all', against='2_8_1_0')
+    # print(diff)
+    # pkg_select = 'black_garden_069b'
+    # export_specific_files(pkg_select, diff[pkg_select])
