@@ -130,7 +130,7 @@ def get_cipher_table(string_header, file_hex):
     return cipher_table
 
 
-def file_to_text(file_path):
+def file_to_text(file_path, hashes=None, bank_file=None):
     file_hex = gf.get_hex_data(file_path)
     string_header = get_header(file_hex)
     if string_header:
@@ -139,14 +139,16 @@ def file_to_text(file_path):
             return None
         string = ''
         file_offset = 0
-        for entry in cipher_table.Entries:
+        for i, entry in enumerate(cipher_table.Entries):
             entry_hex = file_hex[string_header.Offset*2 + file_offset*2: string_header.Offset*2 + file_offset*2 + entry.Length*2]
             # print(f'Using key {entry.Key} for offset range {hex(file_offset)} to {hex(file_offset + entry.Length)}')
             file_offset += entry.Length
             c = cipher([entry_hex[i:i+2] for i in range(0, len(entry_hex), 2)], entry.Key)
+            if hashes and bank_file:
+                string += f'[{bank_file.split("-")[0]}-{bank_file.split("-")[1][4:]}-{hashes[i]}]: '
             string += convert_to_unicode(''.join(c))
             string += '\n'
-            print(f'Entry {cipher_table.Entries.index(entry)}: {entry} string {[convert_to_unicode("".join(c))]}')
+            # print(f'Entry {cipher_table.Entries.index(entry)}: {entry} string {[convert_to_unicode("".join(c))]}')
         return string
     return None
 
@@ -156,17 +158,41 @@ def automatic_folder_converter_all(pkg_dir, pkg_name):
     with open(f'C:/d2_output_2_9_1_0_text/{pkg_name}_text.txt', 'w', encoding='utf-8') as f:
         f.write('')
     entries = {x: y for x, y in pkg_db.get_entries_from_table(pkg_name, 'ID, RefID')}
-    print(entries)
+    entries_pkg = {x: y for x, y in pkg_db.get_entries_from_table(pkg_name, 'ID, RefPKG')}
+    # print(entries)
     for id, entry_name in enumerate(os.listdir(pkg_dir)):
-        if entries[id] == '0x1A8A':
+        if entries[id] == '0x1A88' and entries_pkg[id] == '0x0004':
             print(f'Writing {os.listdir(pkg_dir)[id]} text strings')
             with open(f'C:/d2_output_2_9_1_0_text/{pkg_name}_text.txt', 'a', encoding='utf-8') as f:
-                f.write(os.listdir(pkg_dir)[id] + '\n')
-                to_write = file_to_text(pkg_dir + os.listdir(pkg_dir)[id])
+                bank_file = os.listdir(pkg_dir)[id].replace('.bin', '')
+                f_hex = gf.get_hex_data(f'C:/d2_output_2_9_1_0/{pkg_name}/{bank_file}.bin')
+                # print(f'C:/d2_output_2_9_1_0/{pkg_name}/{file}.bin')
+                try:
+                    text_hashes = [f_hex[112 * 2 + i * 8:112 * 2 + (i + 1) * 8] for i in
+                                   range(int(gf.get_flipped_hex(f_hex[96 * 2:98 * 2], 4), 16))]
+                except ValueError:
+                    text_hashes = None
+                # f.write(os.listdir(pkg_dir)[id] + '\n')
+                eng_file = gf.get_file_from_hash(gf.get_flipped_hex(f_hex[24*2:24*2+8], 8))
+                eng_pkg = gf.get_pkg_name(eng_file)
+                to_write = file_to_text(f'C:/d2_output_2_9_1_0/{eng_pkg}/{eng_file}.bin', hashes=text_hashes, bank_file=bank_file)
                 if to_write is None:
                     continue
+
+                # bank_index = get_bank_index(bank_file)
+                # print(bank_index)
+                # f.write(f'File: {bank_file}\n')
                 f.write(to_write)
-                f.write('\n\n')
+                # f.write('\n\n')
+
+
+# def get_bank_index(bank_file):
+#     pkg_name = gf.get_pkg_name('0913-00001211')
+#     f_hex = gf.get_hex_data(f'C:/d2_output_2_9_1_0/{pkg_name}/0913-00001211.bin')
+#     a = gf.get_flipped_hex(gf.get_hash_from_file(bank_file), 8).upper()
+#     offset = f_hex.find(gf.get_flipped_hex(gf.get_hash_from_file(bank_file), 8).upper())
+#     bank_index = (offset - 48 - 32) / 8
+#     return bank_index
 
 
 # def find_difference_in_text():
@@ -187,7 +213,7 @@ def get_text_in_pkgs():
     # Converts all pkgs in output_all for this version to text
     all_packages = os.listdir(f'C:/d2_output_2_9_1_0/')
     for pkg in all_packages:
-        if 'investment_' in pkg:
+        if 'global' in pkg:
             automatic_folder_converter_all(f'C:/d2_output_2_9_1_0/{pkg}/', pkg)
 
 
@@ -206,5 +232,5 @@ def count_text_in_pkgs():
 
 # find_difference_in_text()
 # count_text_in_pkgs()
-# get_text_in_pkgs()
-file_to_text('C:/d2_output_2_9_1_0/investment_globals_client_0913/0913-00000CFF.bin')
+get_text_in_pkgs()
+# file_to_text('C:/d2_output_2_9_1_0/investment_globals_client_0913/0913-00000CFF.bin')

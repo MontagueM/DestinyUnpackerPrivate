@@ -38,7 +38,7 @@ def get_text_file_from_left_hash(left_hash):
     file = gf.get_file_from_hash(gf.get_flipped_hex(next_hash, 8))
     pkg_name = gf.get_pkg_name(file)
     f_hex = gf.get_hex_data(f'C:/d2_output_2_9_1_0/{pkg_name}/{file}.bin')
-    # print(file)
+    print(file)
     ref = f_hex[132*2:132*2+8]
     # print(ref)
     original_file_from_index(ref)
@@ -58,12 +58,13 @@ def original_file_from_index(ref):
 if __name__ == '__main__':
     # get_text_file_ref('0913-00000CF1')
     # get_text_file_ref('0913-00000CFF')
-    get_text_file_from_left_hash('FC4B756E')  # Traveler's Chosen
-    get_text_file_from_left_hash('B4679F24')  # Fallen Guillotine
-    get_text_file_from_left_hash('ACC393C8')
-    get_text_file_from_left_hash('08CC2B85')
+    # get_text_file_from_left_hash('FC4B756E')  # Traveler's Chosen
+    # get_text_file_from_left_hash('B4679F24')  # Fallen Guillotine
+    # get_text_file_from_left_hash('ACC393C8')
+    # get_text_file_from_left_hash('08CC2B85')
     # original_file_from_index('A60B')  # Traveler's Chosen
     # original_file_from_index('A80B')  # Fallen G
     # get_text_file_ref('0913-00000CF1')
     # get_text_file_ref('0913-00000DCF')
+    get_text_file_from_left_hash('FC4B756E')
     get_text_file_from_left_hash('D680818C')

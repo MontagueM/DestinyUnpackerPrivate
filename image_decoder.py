@@ -88,22 +88,23 @@ def get_images_from_pkg(pkg_path):
         if this_entry[-1] == 'Texture Header':
             header_hex = gf.get_hex_data(file_path)
             try:
-                direc = [x for x in os.listdir(f'{version_str}/output_all/') if this_entry[2].lower()[2:] in x][0]
+                direc = [x for x in os.listdir(f'C:/d2_output_2_9_1_0/') if this_entry[2].lower()[2:] in x][0]
             except IndexError:
                 continue
-            data_hex = gf.get_hex_data(f'{version_str}/output_all/{direc}/{ref_file_name}.bin')
+            data_hex = gf.get_hex_data(f'C:/d2_output_2_9_1_0/{direc}/{ref_file_name}.bin')
         else:
             # print("File given is not texture data or header.")
             continue
 
         try:
-            os.mkdir(f'{version_str}/images_all/')
-            os.mkdir(f'{version_str}/images_all/{file_pkg}/')
+            # os.mkdir(f'{version_str}/images_all/')
+            os.mkdir(f'C:/d2_output_2_9_1_0_images/{file_pkg}/')
         except FileExistsError:
-            try:
-                os.mkdir(f'{version_str}/images_all/{file_pkg}/')
-            except FileExistsError:
-                pass
+            # try:
+            #     os.mkdir(f'{version_str}/images_all/{file_pkg}/')
+            # except FileExistsError:
+            #     pass
+            pass
         header = get_header(header_hex)
         print(f'Getting image data for file {this_entry[0]}')
         dimensions = [int(header.Width), int(header.Height)]
@@ -128,38 +129,39 @@ def get_images_from_pkg(pkg_path):
         else:
             print(f'Invalid identifier {header.Identifier}')
             continue
-        img.save(f'{version_str}/images_all/{file_pkg}/{file_name}.png')
+        img.save(f'C:/d2_output_2_9_1_0_images/{file_pkg}/{file_name}.png')
 
 
 def get_images_in_pkgs():
-    for pkg in os.listdir(f'{version_str}/output_all/'):
+    for pkg in os.listdir('C:/d2_output_2_9_1_0/'):
         if 'investment_globals' in pkg or 'ui' in pkg:
-            get_images_from_pkg(f'{version_str}/output_all/{pkg}/')
+            get_images_from_pkg(f'C:/d2_output_2_9_1_0/{pkg}/')
 
 
-def compare_images():
-    import imagehash
-    cutoff = 5
-    old_version_str = '2_9_0_1'
-    old_images_dir = f'{old_version_str}/images_all/'
-    new_images_dir = f'{version_str}/images_all/'
-
-    for folder in os.listdir(new_images_dir):
-        for img in os.listdir(new_images_dir + folder):
-            original = Image.open(new_images_dir + folder + '/' + img)
-            hash0 = imagehash.average_hash(original)
-            diff = Image.open(old_images_dir + folder + '/' + img)
-            hash1 = imagehash.average_hash(diff)
-            if hash0 - hash1 < cutoff:
-                # print(f'{img} images are similar')
-                pass
-            else:
-                print(f'{img} images are not similar')
-        print(list(set(os.listdir(new_images_dir + folder)) - set(os.listdir(old_images_dir + folder))))
+# def compare_images():
+#     import imagehash
+#     cutoff = 5
+#     old_version_str = '2_9_0_1'
+#     old_images_dir = f'{old_version_str}/images_all/'
+#     new_images_dir = f'{version_str}/images_all/'
+#
+#     for folder in os.listdir(new_images_dir):
+#         for img in os.listdir(new_images_dir + folder):
+#             original = Image.open(new_images_dir + folder + '/' + img)
+#             hash0 = imagehash.average_hash(original)
+#             diff = Image.open(old_images_dir + folder + '/' + img)
+#             hash1 = imagehash.average_hash(diff)
+#             if hash0 - hash1 < cutoff:
+#                 # print(f'{img} images are similar')
+#                 pass
+#             else:
+#                 print(f'{img} images are not similar')
+#         print(list(set(os.listdir(new_images_dir + folder)) - set(os.listdir(old_images_dir + folder))))
 
 # get_image_from_file('2_9_0_1/output_all/ui_01a3/01A3-000009D6.bin')
 # get_images_from_pkg(f'{version_str}/output_all/ui_01a3/')
-# get_images_in_pkgs()
-compare_images()
+get_images_in_pkgs()
+# get_images_from_pkg('C:/d2_output_2_9_1_0/investment_globals_client_0597/')
+# compare_images()
 
  # fix issues with some images needing try except
