@@ -213,7 +213,7 @@ def get_text_in_pkgs():
     # Converts all pkgs in output_all for this version to text
     all_packages = os.listdir(f'C:/d2_output_2_9_1_0/')
     for pkg in all_packages:
-        if 'global' in pkg:
+        if '058c' in pkg:
             automatic_folder_converter_all(f'C:/d2_output_2_9_1_0/{pkg}/', pkg)
 
 
@@ -232,5 +232,5 @@ def count_text_in_pkgs():
 
 # find_difference_in_text()
 # count_text_in_pkgs()
-get_text_in_pkgs()
-# file_to_text('C:/d2_output_2_9_1_0/investment_globals_client_0913/0913-00000CFF.bin')
+# get_text_in_pkgs()
+print(file_to_text('C:/d2_output_2_9_1_0/investment_globals_client_058C/058C-000000FA.bin'))

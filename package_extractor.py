@@ -9,6 +9,7 @@ from Crypto.Cipher import AES
 import binascii
 import text_decoding
 from version import version_str
+from datetime import datetime
 
 """
 Main program with every other file concatenated into a single file
@@ -533,7 +534,7 @@ class Package:
     def output_files(self, all_pkg_hex):
         try:
             # os.mkdir(f'{version_str}/output_all/' + self.package_directory.split('/w64')[-1][1:-6])
-            os.mkdir('C:/d2_output_2_9_1_0/' + self.package_directory.split('/w64')[-1][1:-6])
+            os.mkdir('C:/d2_output/' + self.package_directory.split('/w64')[-1][1:-6])
         except FileExistsError:
             pass
 
@@ -564,7 +565,7 @@ class Package:
                 current_block_id += 1
             if entry.ID > 6000:
                 print('')
-            with open(f'C:/d2_output_2_9_1_0/{self.package_directory.split("/w64")[-1][1:-6]}/{entry.FileName.upper()}.bin', 'wb') as f:
+            with open(f'C:/d2_output/{self.package_directory.split("/w64")[-1][1:-6]}/{entry.FileName.upper()}.bin', 'wb') as f:
             # with open(f'{version_str}/output_all/{self.package_directory.split("/w64")[-1][1:-6]}/{entry.FileName.upper()}.bin', 'wb') as f:
                 f.write(file_buffer[:entry.FileSize])
             print(f"Wrote to {entry.FileName} successfully")
@@ -595,7 +596,7 @@ def unpack_all(path):
     all_packages = os.listdir(path)
     update_db_packages = []
     # unpacked_packages = os.listdir(f'{version_str}/output_all/')
-    unpacked_packages = os.listdir(f'C:/d2_output_2_9_1_0/')
+    unpacked_packages = os.listdir(f'C:/d2_output/')
     seen_pkgs = []
     unpack_pkgs = []
     for pkg in all_packages:
@@ -607,7 +608,7 @@ def unpack_all(path):
             if pkg[4:-6] not in unpacked_packages:
                 unpack_pkgs.append(pkg)
     print(unpack_pkgs)
-    for pkg in unpack_pkgs:  # Change to all_packages with the return in class to change all the DB only, else use unpack_pkgs
+    for pkg in seen_pkgs:  # Change to all_packages with the return in class to change all the DB only, else use unpack_pkgs
         # if 'audio' not in pkg:
         # banned = False
         # for bf in banned_folders:
@@ -617,7 +618,7 @@ def unpack_all(path):
         #     continue
         pkg = Package(f'{path}/{pkg}')
         print(pkg.package_directory)
-        pkg.extract_package()
+        pkg.extract_package(extract=False)
 
 
 def check_all_files_exist():
@@ -633,6 +634,21 @@ def check_all_files_exist():
             pkg.extract_package()
 
 
+def unpack_new(path, new_version_date):
+    date_dic = {}
+    for pkg in os.listdir(path):
+        date_unix = int(os.path.getmtime(f'{path}/{pkg}'))
+        date_day_month = datetime.utcfromtimestamp(date_unix).strftime('%d%m')
+        date_dic[pkg] = date_day_month
+    unpacked_packages = os.listdir(path)
+    for pkg in unpacked_packages:
+        if date_dic[pkg] == new_version_date:
+            if 'manifest' in pkg or 'ui' in pkg:
+                pkg = Package(f'{path}/{pkg}')
+                print(pkg.package_directory)
+                pkg.extract_package()
+
+
 if __name__ == '__main__':
     print(f"Working on version {version_str}")
     try:
@@ -646,5 +662,6 @@ if __name__ == '__main__':
     # unpack_all(f'M:/D2_Datamining/d2packages/{version_str}')
     # unpack_all(f'F:/Steam/steamapps/common/Destiny 2/packages')
     # unpack_all(f'G:/d2packages/{version_str}')  # for versions after 2_9_0_2
-    unpack_all('G:/SteamLibrary/steamapps/common/Destiny 2/packages/')
+    # unpack_all('G:/SteamLibrary/steamapps/common/Destiny 2/packages/')
     # check_all_files_exist()
+    unpack_new('G:/SteamLibrary/steamapps/common/Destiny 2/packages/', '0809')

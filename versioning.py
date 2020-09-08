@@ -51,6 +51,22 @@ def get_version_db(version):
         print(f'Written {pkg} to database.')
 
 
+def write_db():
+    selected_pkgs = os.listdir(pkg_dir)
+    seen_pkgs = []
+    selected_pkgs_2 = []
+    for pkg in selected_pkgs:
+        if pkg[:-6] not in seen_pkgs:
+            seen_pkgs.append(pkg[:-6])
+            selected_pkgs_2.append(pkg)
+    selected_pkgs = selected_pkgs_2
+    print(selected_pkgs)
+    for pkg in selected_pkgs:
+        p = package_extractor.Package(f'{pkg_dir}/{pkg}')
+        p.extract_package(extract=False)
+        print(f'Written {pkg} to database.')
+
+
 def get_lewis_dates():
     with open('lewis_pkg_dates.txt', 'r') as f:
         contents = f.read()
@@ -143,8 +159,9 @@ def find_pkg_name(pkg):
 
 
 if __name__ == '__main__':
-    # get_version_db('2_8_1_0')
-    diff = find_differences(version_to_check='2_9_1_2_all', against='2_8_1_0')
+    # get_version_db('2_9_2_0')
+    write_db()  # Make sure to set the right db version!!!
+    # diff = find_differences(version_to_check='2_9_1_2_all', against='2_8_1_0')
     # print(diff)
     # pkg_select = 'black_garden_069b'
     # export_specific_files(pkg_select, diff[pkg_select])
