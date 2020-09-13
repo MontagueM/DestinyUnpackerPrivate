@@ -88,17 +88,17 @@ def get_images_from_pkg(pkg_path):
         if this_entry[-1] == 'Texture Header':
             header_hex = gf.get_hex_data(file_path)
             try:
-                direc = [x for x in os.listdir(f'C:/d2_output_2_9_1_0/') if this_entry[2].lower()[2:] in x][0]
+                direc = [x for x in os.listdir(f'C:/d2_output/') if this_entry[2].lower()[2:] in x][0]
             except IndexError:
                 continue
-            data_hex = gf.get_hex_data(f'C:/d2_output_2_9_1_0/{direc}/{ref_file_name}.bin')
+            data_hex = gf.get_hex_data(f'C:/d2_output/{direc}/{ref_file_name}.bin')
         else:
             # print("File given is not texture data or header.")
             continue
 
         try:
             # os.mkdir(f'{version_str}/images_all/')
-            os.mkdir(f'C:/d2_output_2_9_1_0_images/{file_pkg}/')
+            os.mkdir(f'C:/d2_output_2_9_2_0_images/{file_pkg}/')
         except FileExistsError:
             # try:
             #     os.mkdir(f'{version_str}/images_all/{file_pkg}/')
@@ -129,13 +129,14 @@ def get_images_from_pkg(pkg_path):
         else:
             print(f'Invalid identifier {header.Identifier}')
             continue
-        img.save(f'C:/d2_output_2_9_1_0_images/{file_pkg}/{file_name}.png')
+        if not img:
+        img.save(f'C:/d2_output_2_9_2_0_images/{file_pkg}/{file_name}.png')
 
 
 def get_images_in_pkgs():
-    for pkg in os.listdir('C:/d2_output_2_9_1_0/'):
-        if 'investment_globals' in pkg or 'ui' in pkg:
-            get_images_from_pkg(f'C:/d2_output_2_9_1_0/{pkg}/')
+    for pkg in os.listdir('C:/d2_output/'):
+        if 'environments' in pkg:
+            get_images_from_pkg(f'C:/d2_output/{pkg}/')
 
 
 # def compare_images():
@@ -161,7 +162,7 @@ def get_images_in_pkgs():
 # get_image_from_file('2_9_0_1/output_all/ui_01a3/01A3-000009D6.bin')
 # get_images_from_pkg(f'{version_str}/output_all/ui_01a3/')
 get_images_in_pkgs()
-# get_images_from_pkg('C:/d2_output_2_9_1_0/investment_globals_client_0597/')
+# get_images_from_pkg('C:/d2_output/investment_globals_client_0597/')
 # compare_images()
 
  # fix issues with some images needing try except
