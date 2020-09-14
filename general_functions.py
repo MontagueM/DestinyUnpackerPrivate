@@ -64,9 +64,11 @@ def get_file_from_hash(hsh):
 
 def get_hash_from_file(file):
     pkg = file.replace(".bin", "").upper()
-
-    firsthex_int = int(pkg[:4], 16)
-    secondhex_int = int(pkg[5:], 16)
+    try:
+        firsthex_int = int(pkg[:4], 16)
+        secondhex_int = int(pkg[5:], 16)
+    except ValueError:
+        return 'N/A'
 
     one = firsthex_int*8192
     two = hex(one + secondhex_int + 2155872256)

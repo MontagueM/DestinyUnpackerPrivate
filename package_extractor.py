@@ -344,7 +344,7 @@ class Package:
         self.block_table = self.get_block_table()
 
         pkg_db.add_decoded_entries(self.entry_table.Entries, self.package_directory.split("/w64")[-1][1:-6])
-        pkg_db.add_block_entries(self.block_table.Entries, self.package_directory.split("/w64")[-1][1:-6])
+        # pkg_db.add_block_entries(self.block_table.Entries, self.package_directory.split("/w64")[-1][1:-6])
         if extract:
             self.process_blocks()
 
@@ -600,10 +600,12 @@ def unpack_all(path):
     single_pkgs = dict()  # USE THIS TO UNPACK MOST EFFICIENTLY
     for pkg in all_packages:
         single_pkgs[pkg[:-6]] = pkg
+    pkg_db.start_db_connection()
+    pkg_db.drop_table('Everything')
     for pkg, pkg_full in single_pkgs.items():  # Change to all_packages with the return in class to change all the DB only, else use unpack_pkgs
-        if 'activities_0200' in pkg:
-            pkg = Package(f'{path}/{pkg_full}')
-            pkg.extract_package(extract=True)
+        # if 'activities_0200' in pkg:
+        pkg = Package(f'{path}/{pkg_full}')
+        pkg.extract_package(extract=False)
 
 
 def check_all_files_exist():
