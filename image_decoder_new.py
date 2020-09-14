@@ -528,9 +528,7 @@ def get_image_from_data(header, dimensions, data_hex):
 
 def get_images_in_pkgs():
     for pkg in os.listdir(f'C:/d2_output/')[::-1]:
-        if 'environments' in pkg:
-            if '0235' in pkg:
-                continue
+        if 'city_tower' in pkg and len(pkg) < 20:
             print(f'Getting from pkg {pkg}')
             get_images_from_pkg(f'C:/d2_output/{pkg}/')
 

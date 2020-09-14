@@ -596,29 +596,16 @@ def unpack_all(path):
     all_packages = os.listdir(path)
     update_db_packages = []
     # unpacked_packages = os.listdir(f'{version_str}/output_all/')
-    unpacked_packages = os.listdir(f'C:/d2_output/')
+    original_pkgs = os.listdir(f'C:/d2_output/')
     seen_pkgs = []
-    unpack_pkgs = []
+    single_pkgs = dict()  # USE THIS TO UNPACK MOST EFFICIENTLY
     for pkg in all_packages:
-        pkg_trimmed = pkg[:-5]
-        print(pkg[4:-6])
-        if pkg_trimmed not in seen_pkgs:
-            seen_pkgs.append(pkg_trimmed)
-            update_db_packages.append(pkg)
-            if pkg[4:-6] not in unpacked_packages:
-                unpack_pkgs.append(pkg)
-    print(unpack_pkgs)
-    for pkg in seen_pkgs:  # Change to all_packages with the return in class to change all the DB only, else use unpack_pkgs
-        # if 'audio' not in pkg:
-        # banned = False
-        # for bf in banned_folders:
-        #     if bf in pkg:
-        #         banned = True
-        # if banned or 'audio' not in pkg:
-        #     continue
-        pkg = Package(f'{path}/{pkg}')
-        print(pkg.package_directory)
-        pkg.extract_package(extract=False)
+        single_pkgs[pkg[:-6]] = pkg
+    for pkg, pkg_full in single_pkgs.items():  # Change to all_packages with the return in class to change all the DB only, else use unpack_pkgs
+        if 'activities_0200' in pkg:
+            print(pkg)
+            pkg = Package(f'{path}/{pkg_full}')
+            pkg.extract_package(extract=True)
 
 
 def check_all_files_exist():
@@ -659,9 +646,6 @@ if __name__ == '__main__':
             os.mkdir(f'{version_str}/output_all/')
         except FileExistsError:
             pass
-    # unpack_all(f'M:/D2_Datamining/d2packages/{version_str}')
-    # unpack_all(f'F:/Steam/steamapps/common/Destiny 2/packages')
-    # unpack_all(f'G:/d2packages/{version_str}')  # for versions after 2_9_0_2
-    # unpack_all('G:/SteamLibrary/steamapps/common/Destiny 2/packages/')
+    unpack_all('G:/SteamLibrary/steamapps/common/Destiny 2/packages/')
     # check_all_files_exist()
-    unpack_new('G:/SteamLibrary/steamapps/common/Destiny 2/packages/', '0809')
+    # unpack_new('G:/SteamLibrary/steamapps/common/Destiny 2/packages/', '0809')
