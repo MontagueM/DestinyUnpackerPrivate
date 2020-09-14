@@ -10,7 +10,7 @@ import binascii
 import text_decoding
 from version import version_str
 from datetime import datetime
-
+import io
 """
 Main program with every other file concatenated into a single file
 """
@@ -326,6 +326,8 @@ class Package:
         self.all_patch_ids = []
         self.max_pkg_hex = None
         self.nonce = None
+        self.aes_key_0 = binascii.unhexlify(''.join([x[2:] for x in self.AES_KEY_0]))
+        self.aes_key_1 = binascii.unhexlify(''.join([x[2:] for x in self.AES_KEY_1]))
 
     def extract_package(self, extract=True, largest_patch=True):
         self.get_all_patch_ids()
@@ -494,13 +496,10 @@ class Package:
         self.output_files(all_pkg_hex)
 
     def decrypt_block(self, block, block_hex):
-        aes_key_0 = binascii.unhexlify(''.join([x[2:] for x in self.AES_KEY_0]))
-        aes_key_1 = binascii.unhexlify(''.join([x[2:] for x in self.AES_KEY_1]))
-
         if block.Flags & 0x4:
-            key = aes_key_1
+            key = self.aes_key_1
         else:
-            key = aes_key_0
+            key = self.aes_key_0
         cipher = AES.new(key, AES.MODE_GCM, nonce=self.nonce)
         plaintext = cipher.decrypt(block_hex)
         # print('Decrypted')
@@ -565,9 +564,13 @@ class Package:
                 current_block_id += 1
             if entry.ID > 6000:
                 print('')
-            with open(f'C:/d2_output/{self.package_directory.split("/w64")[-1][1:-6]}/{entry.FileName.upper()}.bin', 'wb') as f:
-            # with open(f'{version_str}/output_all/{self.package_directory.split("/w64")[-1][1:-6]}/{entry.FileName.upper()}.bin', 'wb') as f:
-                f.write(file_buffer[:entry.FileSize])
+
+            file = io.FileIO(f'C:/d2_output/{self.package_directory.split("/w64")[-1][1:-6]}/{entry.FileName.upper()}.bin', 'wb')
+            writer = io.BufferedWriter(file, buffer_size=entry.FileSize)
+            writer.write(file_buffer[:entry.FileSize])
+            writer.flush()
+            # with open(f'C:/d2_output/{self.package_directory.split("/w64")[-1][1:-6]}/{entry.FileName.upper()}.bin', 'wb') as f:
+            #     f.write(file_buffer[:entry.FileSize])
             print(f"Wrote to {entry.FileName} successfully")
 
 
@@ -594,16 +597,11 @@ banned_folders = [
 
 def unpack_all(path):
     all_packages = os.listdir(path)
-    update_db_packages = []
-    # unpacked_packages = os.listdir(f'{version_str}/output_all/')
-    original_pkgs = os.listdir(f'C:/d2_output/')
-    seen_pkgs = []
     single_pkgs = dict()  # USE THIS TO UNPACK MOST EFFICIENTLY
     for pkg in all_packages:
         single_pkgs[pkg[:-6]] = pkg
     for pkg, pkg_full in single_pkgs.items():  # Change to all_packages with the return in class to change all the DB only, else use unpack_pkgs
         if 'activities_0200' in pkg:
-            print(pkg)
             pkg = Package(f'{path}/{pkg_full}')
             pkg.extract_package(extract=True)
 
