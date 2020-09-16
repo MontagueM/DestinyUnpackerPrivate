@@ -335,7 +335,7 @@ class Package:
             self.set_largest_patch_directory()
         print(f"Extracting files for {self.package_directory}")
 
-        pkg_db.start_db_connection()
+        # pkg_db.start_db_connection()
         pkg_db.drop_table(self.package_directory.split("/w64")[-1][1:-6])
 
         self.max_pkg_hex = gf.get_hex_data(self.package_directory)
@@ -349,7 +349,7 @@ class Package:
             self.process_blocks()
 
     def get_all_patch_ids(self):
-        print(self.package_directory.split('/w64')[0])
+        # print(self.package_directory.split('/w64')[0])
         all_pkgs = [x for x in os.listdir(self.package_directory.split('/w64')[0]) if self.package_id in x]
         all_pkgs.sort()
         self.all_patch_ids = [int(x[-5]) for x in all_pkgs]
@@ -440,7 +440,7 @@ class Package:
             file_type, file_subtype = decode_entry_b(entry.EntryB)
             starting_block, starting_block_offset = decode_entry_c(entry.EntryC)
             file_size, unknown = decode_entry_d(entry.EntryC, entry.EntryD)
-            file_name = f"{self.package_id}-{gf.fill_hex_with_zeros(hex(count)[2:], 8)}"
+            file_name = f"{self.package_id}-{gf.fill_hex_with_zeros(hex(count)[2:], 4)}"
             file_typename = get_file_typename(file_type, file_subtype, ref_id, ref_pkg_id)
 
             decoded_entry = SPkgEntryDecoded(np.uint16(count), file_name, file_typename,
@@ -487,7 +487,7 @@ class Package:
         all_pkg_hex = []
         # We shouldn't do this
         for i in self.all_patch_ids:
-            print(i)
+            # print(i)
             hex_data = gf.get_hex_data(f'{self.package_directory[:-6]}_{i}.pkg')
             all_pkg_hex.append(hex_data)
 
@@ -566,9 +566,14 @@ class Package:
                 print('')
 
             file = io.FileIO(f'C:/d2_output/{self.package_directory.split("/w64")[-1][1:-6]}/{entry.FileName.upper()}.bin', 'wb')
-            writer = io.BufferedWriter(file, buffer_size=entry.FileSize)
-            writer.write(file_buffer[:entry.FileSize])
-            writer.flush()
+            # print(entry.FileSize)
+            if entry.FileSize != 0:
+                writer = io.BufferedWriter(file, buffer_size=entry.FileSize)
+                writer.write(file_buffer[:entry.FileSize])
+                writer.flush()
+            else:
+                with open(f'C:/d2_output/{self.package_directory.split("/w64")[-1][1:-6]}/{entry.FileName.upper()}.bin', 'wb') as f:
+                    f.write(file_buffer[:entry.FileSize])
             # with open(f'C:/d2_output/{self.package_directory.split("/w64")[-1][1:-6]}/{entry.FileName.upper()}.bin', 'wb') as f:
             #     f.write(file_buffer[:entry.FileSize])
             print(f"Wrote to {entry.FileName} successfully")
@@ -603,9 +608,9 @@ def unpack_all(path):
     pkg_db.start_db_connection()
     pkg_db.drop_table('Everything')
     for pkg, pkg_full in single_pkgs.items():  # Change to all_packages with the return in class to change all the DB only, else use unpack_pkgs
-        # if 'activities_0200' in pkg:
+        # if 'activities_0199' in pkg:
         pkg = Package(f'{path}/{pkg_full}')
-        pkg.extract_package(extract=False)
+        pkg.extract_package(extract=True)
 
 
 def check_all_files_exist():
@@ -638,14 +643,14 @@ def unpack_new(path, new_version_date):
 
 if __name__ == '__main__':
     print(f"Working on version {version_str}")
-    try:
-        os.mkdir(f'{version_str}/')
-        os.mkdir(f'{version_str}/output_all/')
-    except FileExistsError:
-        try:
-            os.mkdir(f'{version_str}/output_all/')
-        except FileExistsError:
-            pass
+    # try:
+    #     os.mkdir(f'{version_str}/')
+    #     os.mkdir(f'{version_str}/output_all/')
+    # except FileExistsError:
+    #     try:
+    #         os.mkdir(f'{version_str}/output_all/')
+    #     except FileExistsError:
+    #         pass
     unpack_all('G:/SteamLibrary/steamapps/common/Destiny 2/packages/')
     # check_all_files_exist()
     # unpack_new('G:/SteamLibrary/steamapps/common/Destiny 2/packages/', '0809')

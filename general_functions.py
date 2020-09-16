@@ -59,7 +59,7 @@ def get_file_from_hash(hsh):
     one = first_int - 2155872256
     first_hex = hex(int(np.floor(one/8192)))
     second_hex = hex(first_int % 8192)
-    return f'{fill_hex_with_zeros(first_hex[2:], 4)}-{fill_hex_with_zeros(second_hex[2:], 8)}'.upper()
+    return f'{fill_hex_with_zeros(first_hex[2:], 4)}-{fill_hex_with_zeros(second_hex[2:], 4)}'.upper()
 
 
 def get_hash_from_file(file):

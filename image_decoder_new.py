@@ -292,7 +292,7 @@ def get_images_from_pkg(pkg_path):
             this_entry = [x for x in entries if x[0] == file_name][0]
         except IndexError:
             continue
-        ref_file_name = f'{this_entry[2][2:]}-{gf.fill_hex_with_zeros(this_entry[1][2:], 8)}'
+        ref_file_name = f'{this_entry[2][2:]}-{gf.fill_hex_with_zeros(this_entry[1][2:], 4)}'
         if this_entry[-1] == 'Texture Header':
             header_hex = gf.get_hex_data(file_path)
             try:
@@ -528,7 +528,7 @@ def get_image_from_data(header, dimensions, data_hex):
 
 def get_images_in_pkgs():
     for pkg in os.listdir(f'C:/d2_output/')[::-1]:
-        if 'city_tower' in pkg and len(pkg) < 20:
+        if 'commando' in pkg:
             print(f'Getting from pkg {pkg}')
             get_images_from_pkg(f'C:/d2_output/{pkg}/')
 
